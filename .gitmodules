@@ -1,0 +1,3 @@
+[submodule "bucardo/mtw"]
+	path = bucardo/mtw
+	url = git@bitbucket.org:gsmiro/bucardo.git

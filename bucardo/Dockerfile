@@ -13,7 +13,7 @@ ONBUILD RUN echo $LANG_SET|awk -F \. "{print \$0, \$2}" >> /etc/locale.gen
 ONBUILD RUN dpkg-reconfigure -f noninteractive locales
 ONBUILD RUN apt-get install -y postgresql-plperl-9.3 bucardo=5.1.0-1
 ONBUILD RUN ln -s /usr/lib/postgresql/9.3/bin/postgres /usr/bin
-ONBUILD RUN cp -rf /etc/dockerbuild/pgconf/.* /etc/postgresql/9.3/main/
+#ONBUILD RUN cp -arf /etc/dockerbuild/pgconf/.* /etc/postgresql/9.3/main/
 ONBUILD USER postgres
 # Add VOLUMEs to allow backup of config, logs and databases
 ONBUILD VOLUME  ["~/share","/etc/postgresql", "/var/log/postgresql", "/var/lib/postgresql"]

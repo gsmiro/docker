@@ -1,5 +1,5 @@
 FROM ubuntu:trusty
-COPY sources.list /etc/apt/sources.list
+ONBUILD COPY sources.list /etc/apt/sources.list
 RUN sudo apt-get update
 #bash vulnerabilities?!
 RUN apt-get upgrade -y bash

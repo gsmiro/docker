@@ -11,7 +11,7 @@ RUN rm -R /etc/dockerbuild
 ONBUILD COPY dockerbuild /etc/dockerbuild
 ONBUILD ENV DOCKERBUILD /etc/dockerbuild
 ONBUILD RUN chown root:root $DOCKERBUILD
-ONBUILD RUN chmod -R 700 $DOCKEBUILD
+ONBUILD RUN chmod -R 700 $DOCKERBUILD
 ONBUILD RUN if [ -f $DOCKERBUILD/sources.list ]; then cp $DOCKERBUILD/sources.list /etc/apt/sources.list;fi;
 ONBUILD RUN cp $DOCKERBUILD/openssl.cnf /etc/ssl/openssl.cnf
 ONBUILD ENV OPENSSL_CONF /etc/ssl/openssl.cnf

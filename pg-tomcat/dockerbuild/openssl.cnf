@@ -136,12 +136,13 @@ emailAddress=suporte@metaway.com.br
 # SET-ex3			= SET extension number 3
 
 [ req_attributes ]
-challengePassword		= A challenge password
-challengePassword_min		= 4
-challengePassword_max		= 20
+#challengePassword		= A challenge password
+#challengePassword_min		= 4
+#challengePassword_max		= 20
+#challengePassword_default	= challenge
 
-unstructuredName		= An optional company name
-unstructuredName_default		= mtw
+#unstructuredName		= An optional company name
+#unstructuredName_default		= 
 
 [ usr_cert ]
 
@@ -150,7 +151,7 @@ unstructuredName_default		= mtw
 # This goes against PKIX guidelines but some CAs do it and some software
 # requires this to avoid interpreting an end user certificate as a CA.
 
-#basicConstraints=CA:FALSE
+basicConstraints=CA:FALSE
 
 # Here are some examples of the usage of nsCertType. If it is omitted
 # the certificate can be used for anything *except* object signing.

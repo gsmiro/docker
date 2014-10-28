@@ -36,9 +36,8 @@ ENV PGHOME /var/lib/postgresql
 ENV PGCLUSTER $PGHOME/$PGVER/cluster
 
 RUN mkdir $PGCLUSTER
-RUN chown -R postgres:postgres $PGHOME 
-RUN mkdir - /var/log/postgres
-RUN chown -R postgres:postgres /var/log/postgres
+RUN mkdir /var/log/postgres
+RUN chown -R postgres:postgres $PGHOME /var/log/postgres
 
 USER postgres
 RUN $PGBIN/bin/initdb -D $PGCLUSTER --locale=pt_BR.utf-8 -A md5 --pwfile=$DOCKERBUILD/pgconfig/passwd
@@ -54,8 +53,6 @@ ENV JAVA_HOME /usr/lib/jvm/java-7-openjdk-amd64
 ENV JRE_HOME /usr/lib/jvm/java-7-openjdk-amd64
 ENV CATALINA_PID /var/run/tomcat7.pid 
 
-WORKDIR /usr/share/tomcat7
-
 RUN touch $CATALINA_PID $CATALINA_BASE/logs/catalina.out
 RUN chown $TOMCAT_USER:$TOMCAT_USER $CATALINA_PID $CATALINA_BASE/logs/catalina.out
 
@@ -64,21 +61,18 @@ RUN set | sed -n -e /^CATALINA.*/p -e /^JRE_.*/p -e /^JAVA_.*/p -e /^LOGGING.*/p
 RUN chmod 770 $CATALINA_HOME/bin/setenv.sh
 RUN chown $TOMCAT_USER:$TOMCAT_USER $CATALINA_HOME/bin/setenv.sh 
 
-#Create server keystore containing the server's private key
-RUN keytool -genkey -alias server -keypass $(cat $DOCKERBUILD/tomcat/keypasswd) -keystore keystore.jks -storepass $($DOCKERBUILD/tomcat/storepasswd)
-#Create Server Certification Request from the keystore
-RUN keytool -certreq -v -alias server -file server.csr -keypass $(cat $DOCKERBUILD/tomcat/keypasswd) -storepass $($DOCKERBUILD/tomcat/storepasswd) -keystore keystore.jks
+WORKDIR /usr/share/tomcat7
+RUN openssl req -config $OPENSSL_CONF -newkey rsa -keyout $CA_HOME/private/server.key -passout file:$DOCKERBUILD/tomcat/keypasswd -out $CA_HOME/certs/server.csr
 #Signing
-RUN openssl ca -config "$OPENSSL_CONF" $CA_HOME/certs/ca.crt -extensions v3_req -md sha1 -infiles server.csr
+RUN openssl x509 -req -days 3650 -CA $CA_HOME/ca/cacert.pem -CAkey $CA_HOME/private/cakey.pem -CAserial $CA_HOME/serial -sha1 -extensions v3_req -passin file:$DOCKERBUILD/tomcat/keypasswd -in $CA_HOME/certs/server.csr 
  
-echo "Import ca to keystore"
+#echo "Import ca to keystore"
  
 #Create the server chain in keystore
 #import the CA to the keystore
-RUN keytool -import -alias ca -file $CA_HOME/certs/ca.crt -keystore keystore.jks
+RUN keytool -import -alias ca -file $CA_HOME/ca/cacert.pem -keystore keystore.jks -storepass $(cat $DOCKERBUILD/tomcat/storepasswd)
 #import the signed certificate
-RUN keytool -import -v -alias server -file $CA_HOME/certs/server.crt -keystore keystore.jks
- 
+RUN keytool -import -alias server -file $CA_HOME/certs/server.crt -keystore keystore.jks -storepass $(cat $DOCKERBUILD/tomcat/storepass)
 
 RUN mkdir /home/$TOMCAT_USER
 RUN chown $TOMCAT_USER:$TOMCAT_USER /home/$TOMCAT_USER

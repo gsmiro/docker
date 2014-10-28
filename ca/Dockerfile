@@ -1,18 +1,21 @@
 FROM ubuntu:trusty
-ONBUILD COPY sources.list /etc/apt/sources.list
+COPY dockerbuild /etc/dockerbuild
+RUN chmod -R 700 /etc/dockerbuild
+RUN if [ -f /etc/dockerbuild/sources.list ]; then cp /etc/dockerbuild/sources.list /etc/apt/sources.list;fi;
 RUN sudo apt-get update
 #bash vulnerabilities?!
 RUN apt-get upgrade -y bash
 RUN apt-get install -y openssl
 RUN apt-get install -y openjdk-7-jdk 
-COPY openssl.cnf /etc/ssl/openssl.cnf
-RUN chown root /etc/ssl/openssl.cnf
-RUN chmod 400 /etc/ssl/openssl.cnf
-ENV OPENSSL_CONF /etc/ssl/openssl.cnf
-ENV CA_HOME /home/ca
-RUN mkdir $CA_HOME $CA_HOME/certs $CA_HOME/crl $CA_HOME/newcerts $CA_HOME/private
-RUN touch $CA_HOME/index.txt
-RUN echo "01" > $CA_HOME/serial
-ONBUILD COPY passwd .
-ONBUILD RUN openssl req -config $OPENSSL_CONF -new -x509 -extensions v3_ca -keyout $CA_HOME/private/ca.key -out $CA_HOME/certs/ca.crt -days 3650 -passout file:passwd
-ONBUILD RUN rm passwd
+RUN rm -R /etc/dockerbuild
+ONBUILD COPY dockerbuild /etc/dockerbuild
+ONBUILD RUN chmod -R 700 /etc/dockerbuild
+ONBUILD COPY /etc/dockerbuild/openssl.cnf /etc/ssl/openssl.cnf
+ONBUILD ENV OPENSSL_CONF /etc/ssl/openssl.cnf
+ONBUILD ENV CA_HOME /home/ca
+ONBUILD RUN mkdir $CA_HOME $CA_HOME/certs $CA_HOME/crl $CA_HOME/newcerts $CA_HOME/private
+ONBUILD RUN touch $CA_HOME/index.txt
+ONBUILD RUN echo "01" > $CA_HOME/serial
+ONBUILD COPY /etc/dockerbuild/passwd .
+ONBUILD RUN openssl req -config $OPENSSL_CONF -new -x509 -extensions v3_ca -keyout $CA_HOME/private/ca.key -out $CA_HOME/certs/ca.crt -days 3650 -passout file:/etc/dockerbuild/passwd
+ONBUILD RUN rm /etc/dockerbuild/passwd

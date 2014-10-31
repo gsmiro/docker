@@ -62,18 +62,16 @@ RUN chmod 770 $CATALINA_HOME/bin/setenv.sh
 RUN chown $TOMCAT_USER:$TOMCAT_USER $CATALINA_HOME/bin/setenv.sh 
 
 WORKDIR /usr/share/tomcat7
-RUN openssl req -config $OPENSSL_CONF -newkey rsa -keyout $CA_HOME/private/server.key -passout file:$DOCKERBUILD/tomcat/keypasswd -out $CA_HOME/certs/server.csr
+RUN openssl req -x509 -config $OPENSSL_CONF -newkey rsa:2048 -keyout tmpcert.key -passout file:$DOCKERBUILD/tomcat/keypasswd -out tmpcert.pem
+RUN openssl x509 -subject -noout -in tmpcert.pem | sed -e "/subject= \///" -e "s/\//,/g" > dname
+RUN sed -n -e "/\[ v3_req \]/,/\[/ p" $OPENSSL_CONF | sed -n -e "/[\[#].*/ d" -e "/^$/d" -e "s/.*/\0,/p" > v3ext
+RUN keytool -genkey -dname "$(cat dname)" -ext "$(cat v3ext)" -alias server -keystore $CATALINA_HOME/.keystore -keypass $(cat $DOCKERBUILD/tomcat/keypasswd) -storepass $(cat $DOCKERBUILD/tomcat/storepasswd)
+RUN rm dname v3ext tmpcert*
+RUN keytool -exportcert -keystore $CATALINA_HOME/.keystore -alias server > tmpcert.pem
 #Signing
-RUN openssl x509 -req -days 3650 -CA $CA_HOME/ca/cacert.pem -CAkey $CA_HOME/private/cakey.pem -CAserial $CA_HOME/serial -sha1 -extensions v3_req -passin file:$DOCKERBUILD/tomcat/keypasswd -in $CA_HOME/certs/server.csr 
- 
-#echo "Import ca to keystore"
- 
-#Create the server chain in keystore
-#import the CA to the keystore
-RUN keytool -import -alias ca -file $CA_HOME/ca/cacert.pem -keystore keystore.jks -storepass $(cat $DOCKERBUILD/tomcat/storepasswd)
-#import the signed certificate
-RUN keytool -import -alias server -file $CA_HOME/certs/server.crt -keystore keystore.jks -storepass $(cat $DOCKERBUILD/tomcat/storepass)
+RUN keytool -certreq -v -alias server -file server.csr -keypass $(cat $DOCKERBUILD/tomcat/keypasswd) -storepass $(cat $DOCKERBUILD/tomcat/storepasswd) -keystore $CATALINA_HOME/.keystore
 
+ 
 RUN mkdir /home/$TOMCAT_USER
 RUN chown $TOMCAT_USER:$TOMCAT_USER /home/$TOMCAT_USER
 RUN cp $DOCKERBUILD/start.sh /home/$TOMCAT_USER/

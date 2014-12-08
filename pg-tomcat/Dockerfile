@@ -1,4 +1,10 @@
 FROM gsmiro/ca
+COPY dockerbuild /etc/dockerbuild
+RUN chown -R root:users /etc/dockerbuild
+RUN chmod -R 755 /etc/dockerbuild
+RUN if [ -f /etc/dockerbuild/sources.list ]; then cp /etc/dockerbuild/sources.list /etc/apt/sources.list;fi;
+
+
 RUN gpg --keyserver keyserver.ubuntu.com --recv 3E5C1192
 RUN gpg -o extras.pgp --export --armor 3E5C1192  
 RUN apt-key add extras.pgp
@@ -39,9 +45,13 @@ RUN mkdir $PGCLUSTER
 RUN mkdir /var/log/postgres
 RUN chown -R postgres:postgres $PGHOME /var/log/postgres
 
-USER postgres
-RUN $PGBIN/bin/initdb -D $PGCLUSTER --locale=pt_BR.utf-8 -A md5 --pwfile=$DOCKERBUILD/pgconfig/passwd
+RUN adduser postgres users
+RUN adduser tomcat7 users
+
+RUN chown postgres:postgres $DOCKERBUILD/pgconfig
 RUN cp $DOCKERBUILD/pgconfig/* $PGCLUSTER
+USER postgres
+#RUN $PGBIN/bin/initdb -D $PGCLUSTER --locale=pt_BR.utf-8 -A md5 --pwfile=$PGCLUSTER/passwd
 
 USER root
 
@@ -63,23 +73,12 @@ RUN chown $TOMCAT_USER:$TOMCAT_USER $CATALINA_HOME/bin/setenv.sh
 
 WORKDIR /usr/share/tomcat7
 RUN openssl req -x509 -config $OPENSSL_CONF -newkey rsa:2048 -keyout tmpcert.key -passout file:$DOCKERBUILD/tomcat/keypasswd -out tmpcert.pem
-RUN openssl x509 -subject -noout -in tmpcert.pem | sed -e "/subject= \///" -e "s/\//,/g" > dname
-RUN sed -n -e "/\[ v3_req \]/,/\[/ p" $OPENSSL_CONF | sed -n -e "/[\[#].*/ d" -e "/^$/d" -e "s/.*/\0,/p" > v3ext
-RUN keytool -genkey -dname "$(cat dname)" -ext "$(cat v3ext)" -alias server -keystore $CATALINA_HOME/.keystore -keypass $(cat $DOCKERBUILD/tomcat/keypasswd) -storepass $(cat $DOCKERBUILD/tomcat/storepasswd)
-RUN rm dname v3ext tmpcert*
-RUN keytool -exportcert -keystore $CATALINA_HOME/.keystore -alias server > tmpcert.pem
-#Signing
-RUN keytool -certreq -v -alias server -file server.csr -keypass $(cat $DOCKERBUILD/tomcat/keypasswd) -storepass $(cat $DOCKERBUILD/tomcat/storepasswd) -keystore $CATALINA_HOME/.keystore
-
+RUN openssl req -newkey rsa:2048 -keyout serverkey.pem -passout file:$DOCKERBUILD/passwd -out servercert.csr
+RUN openssl ca -batch -out servercert.pem -extensions v3_req -passin file:$DOCKERBUILD/passwd -infiles servercert.csr
+RUN openssl pkcs12 -export -in servercert.pem -inkey serverkey.pem -chain -passin file:$DOCKERBUILD/tomcat/keypasswd -passout pass:storepass -CAfile $CA_HOME/ca/cacert.pem -out keystore.p12 
  
-RUN mkdir /home/$TOMCAT_USER
-RUN chown $TOMCAT_USER:$TOMCAT_USER /home/$TOMCAT_USER
-RUN cp $DOCKERBUILD/start.sh /home/$TOMCAT_USER/
-RUN chmod 770 /home/$TOMCAT_USER/start.sh
-RUN chown $TOMCAT_USER:$TOMCAT_USER /home/$TOMCAT_USER/start.sh
 
 EXPOSE 5432
 EXPOSE 8080
 
-USER tomcat7
-CMD ["./home/$TOMCAT_USER/start.sh","start"]  
+CMD ["$DOCKERBUILD/start.sh","start"]  

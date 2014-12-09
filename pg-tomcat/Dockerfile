@@ -64,17 +64,19 @@ RUN chown $TOMCAT_USER:$TOMCAT_USER $CATALINA_PID $CATALINA_BASE/logs/catalina.o
 
 RUN echo "#!/bin/bash" > $CATALINA_HOME/bin/setenv.sh
 RUN set | sed -n -e /^CATALINA.*/p -e /^JRE_.*/p -e /^JAVA_.*/p -e /^LOGGING.*/p -e /^JPDA.*/p | sed "s/\(.*\)/export \1/" >> $CATALINA_HOME/bin/setenv.sh
-RUN chmod 770 $CATALINA_HOME/bin/setenv.sh
+RUN chmod 755 $CATALINA_HOME/bin/setenv.sh
 RUN chown $TOMCAT_USER:$TOMCAT_USER $CATALINA_HOME/bin/setenv.sh 
 
 WORKDIR /usr/share/tomcat7
 RUN openssl req -x509 -config $OPENSSL_CONF -newkey rsa:2048 -keyout tmpcert.key -passout file:$DOCKERBUILD/tomcat/keypasswd -out tmpcert.pem
 RUN openssl req -newkey rsa:2048 -keyout serverkey.pem -passout file:$DOCKERBUILD/passwd -out servercert.csr
-RUN openssl ca -batch -out servercert.pem -extensions v3_req -passin file:$DOCKERBUILD/passwd -infiles servercert.csr
-RUN openssl pkcs12 -export -in servercert.pem -inkey serverkey.pem -chain -passin file:$DOCKERBUILD/tomcat/keypasswd -passout pass:storepass -CAfile $CA_HOME/ca/cacert.pem -out keystore.p12 
+RUN openssl ca -batch -out servercert.pem -extfile $DOCKERBUILD/openssl-ext.cnf -passin file:$DOCKERBUILD/passwd -infiles servercert.csr
+RUN openssl pkcs12 -export -in servercert.pem -inkey serverkey.pem -chain -passin file:$DOCKERBUILD/tomcat/keypasswd -passout pass:storepass -CAfile $CA_HOME/ca/cacert.pem -out $CATALINA_BASE/keystore.p12 
+RUN cp $DOCKERBUILD/tomcat/server.xml /etc/tomcat7
  
-
+RUN chmod 755 $DOCKERBUILD/start.sh
 EXPOSE 5432
 EXPOSE 8080
+EXPOSE 8443
 
 CMD ["$DOCKERBUILD/start.sh","start"]  

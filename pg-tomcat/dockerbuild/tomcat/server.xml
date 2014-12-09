@@ -84,7 +84,7 @@
          This connector uses the JSSE configuration, when using APR, the
          connector should be using the OpenSSL style configuration
          described in the APR documentation -->
-<Connector CipherSuite="SSL_RSA_WITH_3DES_EDE_CBC_SHA" SSLEnabled="true" acceptCount="100" clientAuth="false" disableUploadTimeout="true" enableLookups="false" keystoreFile="" keystorePass="storepasswd" maxThreads="25" port="8443" protocol="org.apache.coyote.http11.Http11NioProtocol" scheme="https" secure="true" sslProtocol="TLS"/>
+<Connector CipherSuite="SSL_RSA_WITH_3DES_EDE_CBC_SHA" SSLEnabled="true" acceptCount="100" clientAuth="false" disableUploadTimeout="true" enableLookups="false" keystoreType="PKCS12" keystoreFile="keystore.p12" keystorePass="storepasswd" maxThreads="25" port="8443" protocol="org.apache.coyote.http11.Http11NioProtocol" scheme="https" secure="true" sslProtocol="TLS"/>
 
     <!-- Define an AJP 1.3 Connector on port 8009 -->
     <!--

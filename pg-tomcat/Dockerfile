@@ -1,9 +1,6 @@
 FROM gsmiro/ca
-COPY dockerbuild /etc/dockerbuild
-RUN chown -R root:users /etc/dockerbuild
-RUN chmod -R 755 /etc/dockerbuild
+COPY dockerbuild  /etc/dockerbuild
 RUN if [ -f /etc/dockerbuild/sources.list ]; then cp /etc/dockerbuild/sources.list /etc/apt/sources.list;fi;
-
 
 RUN gpg --keyserver keyserver.ubuntu.com --recv 3E5C1192
 RUN gpg -o extras.pgp --export --armor 3E5C1192  
@@ -36,6 +33,9 @@ RUN apt-get install -y git
 RUN apt-get install -y tomcat7
 RUN apt-get install -y postgresql-9.3=9.3.5-0ubuntu0.14.04.1 
 
+RUN chown -R postgres:postgres $DOCKERBUILD/pgconfig 
+RUN chown -R tomcat7:tomcat7 $DOCKERBUILD/tomcat
+
 ENV PGVER 9.3
 ENV PGBIN /usr/lib/postgresql/$PGVER
 ENV PGHOME /var/lib/postgresql
@@ -45,13 +45,9 @@ RUN mkdir $PGCLUSTER
 RUN mkdir /var/log/postgres
 RUN chown -R postgres:postgres $PGHOME /var/log/postgres
 
-RUN adduser postgres users
-RUN adduser tomcat7 users
-
-RUN chown postgres:postgres $DOCKERBUILD/pgconfig
-RUN cp $DOCKERBUILD/pgconfig/* $PGCLUSTER
 USER postgres
-#RUN $PGBIN/bin/initdb -D $PGCLUSTER --locale=pt_BR.utf-8 -A md5 --pwfile=$PGCLUSTER/passwd
+RUN $PGBIN/bin/initdb -D $PGCLUSTER --locale=pt_BR.utf-8 -A md5 --pwfile=$DOCKERBUILD/pgconfig/passwd
+RUN cp -R $DOCKERBUILD/pgconfig/ /etc/postgresql/$PGVER/cluster
 
 USER root
 

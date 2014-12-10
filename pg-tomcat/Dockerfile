@@ -29,7 +29,6 @@ ENV LC_RESPONSE pt_BR.UTF-8
 ENV LC_TELEPHONE pt_BR.UTF-8
 ENV LC_TIME pt_BR.UTF-8
 
-RUN apt-get install -y git
 RUN apt-get install -y tomcat7
 RUN apt-get install -y postgresql-9.3=9.3.5-0ubuntu0.14.04.1 
 
@@ -68,10 +67,9 @@ RUN chmod 755 $CATALINA_HOME/bin/setenv.sh
 RUN chown $TOMCAT_USER:$TOMCAT_USER $CATALINA_HOME/bin/setenv.sh 
 
 WORKDIR /usr/share/tomcat7
-RUN openssl req -x509 -config $OPENSSL_CONF -newkey rsa:2048 -keyout tmpcert.key -passout file:$DOCKERBUILD/tomcat/keypasswd -out tmpcert.pem
 RUN openssl req -newkey rsa:2048 -keyout serverkey.pem -passout file:$DOCKERBUILD/passwd -out servercert.csr
 RUN openssl ca -batch -out servercert.pem -extfile $DOCKERBUILD/openssl-ext.cnf -passin file:$DOCKERBUILD/passwd -infiles servercert.csr
-RUN openssl pkcs12 -export -in servercert.pem -inkey serverkey.pem -chain -passin file:$DOCKERBUILD/tomcat/keypasswd -passout pass:storepass -CAfile $CA_HOME/ca/cacert.pem -out $CATALINA_BASE/keystore.p12 
+RUN openssl pkcs12 -export -in servercert.pem -inkey serverkey.pem -chain -passin file:$DOCKERBUILD/tomcat/keypasswd -passout pass:storepasswd -CAfile $CA_HOME/ca/cacert.pem -out $CATALINA_BASE/keystore.p12 
 RUN cp $DOCKERBUILD/tomcat/server.xml /etc/tomcat7
  
 RUN chmod 755 $DOCKERBUILD/start.sh

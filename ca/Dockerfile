@@ -1,4 +1,7 @@
-FROM gsmiro/ca:deps
+FROM gsmiro/base
+COPY dockerbuild /etc/dockerbuild
+RUN if [ -f /etc/dockerbuild/sources.list ]; then cp /etc/dockerbuild/sources.list /etc/apt/sources.list;fi;
+RUN apt-get install -y openssl
 RUN cp $DOCKERBUILD/openssl.cnf /etc/ssl/openssl.cnf
 ENV OPENSSL_CONF /etc/ssl/openssl.cnf
 ENV CA_HOME /home/ca

@@ -1,8 +1,7 @@
-FROM ubuntu:trusty
+FROM centos:7
 COPY dockerbuild /etc/dockerbuild
 RUN chmod -R 755 /etc/dockerbuild
-RUN if [ -f /etc/dockerbuild/sources.list ]; then cp /etc/dockerbuild/sources.list /etc/apt/sources.list;fi;
 ENV DOCKERBUILD /etc/dockerbuild
-RUN apt-get update
-RUN apt-get upgrade -y bash
-RUN apt-get install -y git openjdk-7-jdk 
+RUN yum install -y git wget openjdk-7-jdk 
+RUN yum install -y sudo tar
+RUN yum reinstall -y glibc-common
